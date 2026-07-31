@@ -7,13 +7,20 @@ from typing import Optional, Dict, List, Tuple
 URL = "https://api.divar.ir/v8/postlist/w/search"
 
 HEADERS = {
-    "Content-Type": "application/json; charset=utf-8",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Content-Type": "application/json",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0",
     "Origin": "https://divar.ir",
-    "Referer": "https://divar.ir/s/mashhad/real-estate",
+    "Referer": "https://divar.ir/",
     "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "sec-ch-ua": '"Not;A=Brand";v="8", "Chromium";v="150", "Microsoft Edge";v="150"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Windows"',
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-site",
+    "x-render-type": "CSR",
 }
-
 # Main for-sale real-estate categories
 CATEGORIES = {
     "apartment-sell": "Apartment",
@@ -203,10 +210,15 @@ def main():
     session = requests.Session()
     session.headers.update(HEADERS)
 
+    try:
+        session.get("https://divar.ir/s/mashhad/real-estate", timeout=15)
+        print("Session cookie initialized.")
+    except Exception as e:
+        print(f"Warning: could not initialize session cookie: {e}")
+
     all_data = []
     global_seen = set()
 
-    # Load previously collected tokens (for resume)
     if os.path.exists("all_real_estate_mashhad.csv"):
         with open("all_real_estate_mashhad.csv", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
@@ -222,12 +234,11 @@ def main():
                 category=cat,
                 min_price=min_p,
                 max_price=max_p,
-                max_pages=70,          # enough for each price slice
+                max_pages=70,
                 seen=global_seen
             )
             all_data.extend(posts)
 
-            # Save after each segment
             with open("all_real_estate_mashhad.csv", "w", newline="", encoding="utf-8-sig") as f:
                 writer = csv.DictWriter(f, fieldnames=["category", "title", "price", "location", "token", "link"])
                 writer.writeheader()
@@ -235,15 +246,6 @@ def main():
 
             print(f"Segment done. Current grand total: {len(all_data)}")
 
-            # Soft stop if we already have enough
-            if len(all_data) >= 32000:
-                print("Reached ~32k → stopping early.")
-                break
-        else:
-            continue
-        break
-
-    # Final category-separated files
     for cat, name in CATEGORIES.items():
         cat_posts = [p for p in all_data if p["category"] == cat]
         fname = f"{cat}.csv"
@@ -255,7 +257,6 @@ def main():
 
     print(f"\n Finished! Total unique ads: {len(all_data)}")
     print("Main file: all_real_estate_mashhad.csv")
-
 
 if __name__ == "__main__":
     main()
