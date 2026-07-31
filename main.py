@@ -122,7 +122,7 @@ def fetch_with_retry(session: requests.Session, payload: Dict, max_retries: int 
             resp = session.post(URL, json=payload, timeout=30)
             if resp.status_code == 429:
                 wait = 25 * (attempt + 1)
-                print(f"  ⚠ Rate limit (429) — waiting {wait}s...")
+                print(f" Rate limit (429) — waiting {wait}s...")
                 time.sleep(wait)
                 continue
             resp.raise_for_status()
